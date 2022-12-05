@@ -3,26 +3,49 @@ from proto_out.interface_pb2 import ConfigurationStatus
 
 import grpc
 import logging
-from concurrent import futures
+import asyncio
 
 class MessageServer(MessageServerServicer):
-    def ConfigureFrequency(self, _request, _context):
+    def __init__(self, work_handler) -> None:
+        self.work_handler = work_handler
+
+    async def ConfigureFrequency(self, request, _context):
+        await self.work_handler.change_freq(request.freq)
         return ConfigurationStatus(status="success")
 
-    def ConfigureMessage(self, _request, _context):
+    async def ConfigureMessage(self, request, _context):
+        await self.work_handler.change_message(request.message)
         return ConfigurationStatus(status="success")
 
+class Worker:
+    def __init__(self) -> None:
+        self.freq = 1
+        self.message = "python server"
+        print("worker created")
 
-def serve():
+    async def change_freq(self, freq):
+        self.freq = freq
+
+    async def change_message(self, message):
+        self.message = message
+
+    async def work_loop(self):
+        while True:
+            print(self.message)
+            await asyncio.sleep(1/self.freq)
+
+async def serve():
     port = '50500'
-    grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
-    add_MessageServerServicer_to_server(MessageServer(), grpc_server)
+    grpc_server = grpc.aio.server()
+    worker = Worker()
+    message_server = MessageServer(worker)
+    add_MessageServerServicer_to_server(message_server, grpc_server)
     grpc_server.add_insecure_port('[::]:' + port)
-    grpc_server.start()
+    await asyncio.gather(worker.work_loop(), grpc_server.start())
     print("Server started, listening on " + port)
-    grpc_server.wait_for_termination()
+    await grpc_server.wait_for_termination()
 
 
 if __name__ == '__main__':
     logging.basicConfig()
-    serve()
+    asyncio.run(serve())
