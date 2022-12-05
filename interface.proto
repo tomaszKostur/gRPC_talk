@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package server_configuration;
+package interface;
 
 service MessageServer {
     rpc ConfigureFrequency (FrequencyInfo) returns (ConfigurationStatus) {}
