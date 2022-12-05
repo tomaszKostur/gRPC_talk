@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package server_configuration;
+
+service MessageServer {
+    rpc ConfigureFrequency (FrequencyInfo) returns (ConfigurationStatus) {}
+    rpc ConfigureMessage (MessageInfo) returns (ConfigurationStatus) {}
+}
+
+message FrequencyInfo {
+    uint32 freq = 1;
+}
+
+message ConfigurationStatus {
+    string status = 1;
+}
+
+message MessageInfo {
+    string message = 1;
+}
